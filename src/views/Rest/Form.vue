@@ -8,6 +8,17 @@
 				<el-option v-for="item in typeList" :key="item.id" :label="item.name" :value="item.name"></el-option>
 			</el-select>
 		</el-form-item>
+		<el-form-item label="封面">
+			<el-upload
+            class="avatar-uploader"
+            :action="uploadUrl"
+            :show-file-list="false"
+            :on-success="handleAvatarSuccess"
+            :before-upload="beforeAvatarUpload">
+                <img v-if="form.cover" :src="form.cover" class="avatar">
+                <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+            </el-upload>
+		</el-form-item>
 		<el-form-item class="editor" label="内容" prop="content">
 			<quillEditor v-model="form.content" :options="editorOption" />
 		</el-form-item>
@@ -26,13 +37,15 @@ import {addRest,getRestTypeList,getRest} from '../../api/api.js'
 		inject:['reload'],
 		data() {
 			return {
+				uploadUrl:"/blog/user/avatarUpload",
 				loading:false,
 				id:'',
 				typeList:[],
 				form: {
 					title: '',
 					content:'',
-					region:''
+					region:'',
+					cover:''
 				},
 				rules:{
 					title:[
@@ -85,7 +98,7 @@ import {addRest,getRestTypeList,getRest} from '../../api/api.js'
 						var params = {
 							title:this.form.title,
 							content:this.form.content,
-							source:this.form.source,
+							cover:this.form.cover,
 							type:this.form.region
 						}
 						if(this.id){
@@ -111,6 +124,27 @@ import {addRest,getRestTypeList,getRest} from '../../api/api.js'
 				getRestTypeList().then(res=>{
 					this.typeList=res;
 				})
+			},
+			handleAvatarSuccess(res, file) {
+				if(res.status==1){
+					this.$message.success('上传成功!');
+					this.form.cover = res.url;
+				}else{
+					this.$message.error('上传失败!');
+				}   
+			},
+			beforeAvatarUpload(file) {
+				const isJPG = file.type === 'image/jpeg';
+				const isPNG = file.type === 'image/png';
+				const isLt2M = file.size / 1024 / 1024 < 2;
+				if (!isJPG && !isPNG) {
+					this.$message.error('图片只能是 JPG或PNG 格式!');
+					return;
+				}
+				if (!isLt2M) {
+					this.$message.error('图片大小不能超过 2MB!');
+					return;
+				}
 			}
 		},
 		components:{
@@ -124,6 +158,7 @@ import {addRest,getRestTypeList,getRest} from '../../api/api.js'
 					this.form.title = res.title;
 					this.form.content = res.content;
 					this.form.region = res.type;
+					this.form.cover = res.cover
 				})
 			}
 		},
